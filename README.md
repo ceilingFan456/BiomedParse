@@ -1,5 +1,7 @@
 # **BiomedParse**
 
+[Notice] This is v2 of the [[`BiomedParse`](https://aka.ms/biomedparse-paper)] model, with improved code and model architecture using [[`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf)]. We also provide end-to-end 3D inference. Check [[`v1`](https://github.com/microsoft/BiomedParse/tree/main)] if you are looking for the original version.
+
 This repository hosts the code and resources for the paper **"A Foundation Model for Joint Segmentation, Detection, and Recognition of Biomedical Objects Across Nine Modalities"** (published in [*Nature Methods*](https://aka.ms/biomedparse-paper)).
 
 [[`Paper`](https://aka.ms/biomedparse-paper)] [[`Demo`](https://microsoft.github.io/BiomedParse/)] [[`Model`](https://huggingface.co/microsoft/BiomedParse)]  [[`Data`](https://huggingface.co/datasets/microsoft/BiomedParseData)]  [[`BibTeX`](#Citation)]
@@ -9,6 +11,7 @@ This repository hosts the code and resources for the paper **"A Foundation Model
 ![Example Predictions](assets/readmes/biomedparse_prediction_examples.png)
 
 ## News
+- Jun. 11, 2025: BiomedParse is #1 in the [[`CVPR 2025: Foundation Models for Text-guided 3D Biomedical Image Segmentation Challenge`](https://www.codabench.org/competitions/5651/)]! We upgraded our model and finetuned on the challenge [[`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM)] with a wider and more comprehensive coverage for 3D biomedical imaging data. Checkout our model in containerized [[`docker image`](https://drive.google.com/file/d/1eUAY1qvEzM0Ut0PA9BGp6gexn5TiFWj8/view?usp=sharing)] for direct inference. Please acknowledge the original challenge if you use this version of the model.
 - Jan. 9, 2025: Refined all object recognition script and added notebook with examples.
 - Dec. 12, 2024: Uploaded extra datasets for finetuning on [[`Data`](https://huggingface.co/datasets/microsoft/BiomedParseData)]. Added random rotation feature for training.
 - Dec. 5, 2024: The loading process of target_dist.json is optimized by automatic downloading from HuggingFace.
@@ -21,36 +24,22 @@ This repository hosts the code and resources for the paper **"A Foundation Model
 git clone https://github.com/microsoft/BiomedParse.git
 ```
 
-[Notice] If inference_utils/target_dist.json is not cloned correctly, it will be automatically loaded from HuggingFace when needed.
-
 ### Conda Environment Setup
-#### Option 1: Directly build the conda environment
-Under the project directory, run
 ```sh
-conda env create -f environment.yml
+conda create -n biomedparse_v2 python=3.10.14
+conda activate biomedprse_v2
 ```
-
-#### Option 2: Create a new conda environment from scratch
-```sh
-conda create -n biomedparse python=3.9.19
-conda activate biomedparse
-```
-
-Install Pytorch
-```sh
-conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
-```
-In case there is issue with detectron2 installation, make sure your pytorch version is compatible with CUDA version on your machine at https://pytorch.org/.
 
 Install dependencies
 ```sh
-pip install -r assets/requirements/requirements.txt
+pip install -r assets/requirements.txt
+pip install git+https://github.com/facebookresearch/detectron2.git
 ```
 
 ## Dataset
 BiomedParseData was created from preprocessing publicly available biomedical image segmentation datasets. Check a subset of our processed datasets on HuggingFace: https://huggingface.co/datasets/microsoft/BiomedParseData. For the source datasets, please check the details here: [BiomedParseData](assets/readmes/DATASET.md). As a quick start, we've samples a tiny demo dataset at biomedparse_datasets/BiomedParseData-Demo
 
-## Model Checkpoints
+<!-- ## Model Checkpoints
 We host our model checkpoints on HuggingFace here: https://huggingface.co/microsoft/BiomedParse. See example code below on model loading.
 
 Please expect future updates of the model as we are making it more robust and powerful based on feedbacks from the community. We recomment using the latest version of the model.
@@ -198,34 +187,8 @@ To evaluate the model, run:
 ```sh
 bash assets/scripts/eval.sh
 ```
-This will continue evaluate the model on the test datasets you specified in configs/biomed_seg_lang_v1.yaml. We put BiomedParseData-Demo as the default. You can add any other datasets in the list.
+This will continue evaluate the model on the test datasets you specified in configs/biomed_seg_lang_v1.yaml. We put BiomedParseData-Demo as the default. You can add any other datasets in the list. -->
 
-<!-- ### Install Docker
-
-In order to make sure the environment is set up correctly, we use run BiomedParse on a Docker image. Follow these commands to install Docker on Ubuntu:
-
-```sh
-sudo apt update
-sudo apt install apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-sudo apt update
-apt-cache policy docker-ce
-sudo apt install docker-ce
-```
-
-## Prepare Docker Environment
-
-Specify the project directories in `docker/README.md`.
-
-Run the following commands to set up the Docker environment:
-
-```sh
-bash docker/docker_build.sh
-bash docker/docker_run.sh
-bash docker/setup_inside_docker.sh
-source docker/data_env.sh
-``` -->
 
 ## Citation
 
@@ -241,6 +204,17 @@ Please cite our paper if you use the code, model, or data.
   pages={166--176},
   year={2025},
   publisher={Nature Publishing Group US New York}
+}
+```
+
+If you use the v2 code or model, please also cite the BoltzFormer paper:
+```bibtex
+@inproceedings{zhao2025boltzmann,
+  title={Boltzmann Attention Sampling for Image Analysis with Small Objects},
+  author={Zhao, Theodore and Kiblawi, Sid and Usuyama, Naoto and Lee, Ho Hin and Preston, Sam and Poon, Hoifung and Wei, Mu},
+  booktitle={Proceedings of the Computer Vision and Pattern Recognition Conference},
+  pages={25950--25959},
+  year={2025}
 }
 ```
 
