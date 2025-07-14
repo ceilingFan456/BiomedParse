@@ -65,7 +65,7 @@ def main(args):
 
     GlobalHydra.instance().clear()
     hydra.initialize(config_path="configs", job_name="example_prediction")
-    cfg = compose(config_name="seem_model_3D")
+    cfg = compose(config_name="biomedparse_3D")
     model = hydra.utils.instantiate(cfg, _convert_="object")
     model.load_pretrained("model_weights/biomedparse_3D_AllData_MultiView_edge.ckpt")
     model.to(device)

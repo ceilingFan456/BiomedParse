@@ -1,6 +1,6 @@
 # **BiomedParse**
 
-[Notice] This is v2 of the [[`BiomedParse`](https://aka.ms/biomedparse-paper)] model, with improved code and model architecture using [[`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf)]. We also provide end-to-end 3D inference. Check [[`v1`](https://github.com/microsoft/BiomedParse/tree/main)] if you are looking for the original version.
+[Notice] This is v2 of the [`BiomedParse`](https://aka.ms/biomedparse-paper) model, with improved code and model architecture using [`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf). We also provide end-to-end 3D inference. Check [`v1`](https://github.com/microsoft/BiomedParse/tree/main) if you are looking for the original version.
 
 This repository hosts the code and resources for the paper **"A Foundation Model for Joint Segmentation, Detection, and Recognition of Biomedical Objects Across Nine Modalities"** (published in [*Nature Methods*](https://aka.ms/biomedparse-paper)).
 
@@ -11,7 +11,7 @@ This repository hosts the code and resources for the paper **"A Foundation Model
 ![Example Predictions](assets/readmes/biomedparse_prediction_examples.png)
 
 ## News
-- Jun. 11, 2025: BiomedParse is #1 in the [[`CVPR 2025: Foundation Models for Text-guided 3D Biomedical Image Segmentation Challenge`](https://www.codabench.org/competitions/5651/)]! We upgraded our model and finetuned on the challenge [[`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM)] with a wider and more comprehensive coverage for 3D biomedical imaging data. Checkout our model in containerized [[`docker image`](https://drive.google.com/file/d/1eUAY1qvEzM0Ut0PA9BGp6gexn5TiFWj8/view?usp=sharing)] for direct inference. Please acknowledge the original challenge if you use this version of the model.
+- Jun. 11, 2025: BiomedParse is #1 in the [`CVPR 2025: Foundation Models for Text-guided 3D Biomedical Image Segmentation Challenge`](https://www.codabench.org/competitions/5651/)! We upgraded our model and finetuned on the challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM) with a wider and more comprehensive coverage for 3D biomedical imaging data. Checkout our model in containerized [[`docker image`](https://drive.google.com/file/d/1eUAY1qvEzM0Ut0PA9BGp6gexn5TiFWj8/view?usp=sharing)] for direct inference. Please acknowledge the original challenge if you use this version of the model.
 - Jan. 9, 2025: Refined all object recognition script and added notebook with examples.
 - Dec. 12, 2024: Uploaded extra datasets for finetuning on [[`Data`](https://huggingface.co/datasets/microsoft/BiomedParseData)]. Added random rotation feature for training.
 - Dec. 5, 2024: The loading process of target_dist.json is optimized by automatic downloading from HuggingFace.
@@ -35,6 +35,98 @@ Install dependencies
 pip install -r assets/requirements.txt
 pip install git+https://github.com/facebookresearch/detectron2.git
 ```
+
+## Model Inference
+The v2 version of BiomedParse supports inference in both 2D and 3D images. The segmentation of 3D volumes is performed in a slice-by-slice 2.5D manner, with neighboring 3D context encoded for each slice in RGB format. Here we provide the example usage of the model weights trained on the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Please acknowledge the original challenge if you use this version of the model.
+
+### Model Weights
+#### Option 1: HuggingFace
+TODO: updated on HuggingFace: https://huggingface.co/microsoft/BiomedParse 
+
+#### Option 2: From Docker image
+
+Step 1: Download docker container from https://drive.google.com/file/d/1eUAY1qvEzM0Ut0PA9BGp6gexn5TiFWj8/view
+```sh
+mkdir model_weights
+cd model_weights
+gdown --id 1eUAY1qvEzM0Ut0PA9BGp6gexn5TiFWj8
+```
+
+Step 2: Extract model weights
+```sh
+docker load -i biomedparse_alldata.tar.gz
+docker create --name extract biomedparse:latest
+docker cp extract:/workspace/model_weights/biomedparse_3D_AllData_MultiView_edge.ckpt biomedparse_3D_AllData_MultiView_edge.ckpt
+docker rm extract
+cd ..
+```
+
+Now you should have the model weights ready for use!
+
+### Inference 3D Examples
+```sh
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+import torch.nn.functional as F
+import hydra
+from hydra import compose
+from hydra.core.global_hydra import GlobalHydra
+from utils import process_input, process_output, slice_nms
+from inference import postprocess, merge_multiclass_masks
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
+
+GlobalHydra.instance().clear()
+hydra.initialize(config_path="configs", job_name="example_prediction")
+cfg = compose(config_name="biomedparse_3D")
+model = hydra.utils.instantiate(cfg, _convert_="object")
+model.load_pretrained("model_weights/biomedparse_3D_AllData_MultiView_edge.ckpt")
+model = model.to(device).eval()
+
+
+file_path = "examples/imgs/CT_AMOS_amos_0018.npz"
+
+npz_data = np.load(file_path, allow_pickle=True)
+imgs = npz_data["imgs"]
+text_prompts = npz_data["text_prompts"].item()
+
+print("Loaded image shape:", imgs.shape)
+print("Text prompts:", text_prompts)
+
+ids = [int(_) for _ in text_prompts.keys() if _ != "instance_label"]
+ids.sort()
+text = "[SEP]".join([text_prompts[str(i)] for i in ids])
+
+imgs, pad_width, padded_size, valid_axis = process_input(imgs, 512)
+
+imgs = imgs.to(device).int()
+
+input_tensor = {
+    "image": imgs.unsqueeze(0),  # Add batch dimension
+    "text": [text],
+}
+
+with torch.no_grad():
+    output = model(input_tensor, mode="eval", slice_batch_size=4)
+
+mask_preds = output["predictions"]["pred_gmasks"]
+mask_preds = F.interpolate(
+    mask_preds,
+    size=(512, 512),
+    mode="bicubic",
+    align_corners=False,
+    antialias=True,
+)
+
+mask_preds = postprocess(mask_preds, output["predictions"]["object_existence"])
+mask_preds = merge_multiclass_masks(mask_preds, ids)
+mask_preds = process_output(mask_preds, pad_width, padded_size, valid_axis)
+print("Processed mask shape:", mask_preds.shape)
+```
+
+Please refer to inference_example_3D.ipynb for more examples.
 
 ## Dataset
 BiomedParseData was created from preprocessing publicly available biomedical image segmentation datasets. Check a subset of our processed datasets on HuggingFace: https://huggingface.co/datasets/microsoft/BiomedParseData. For the source datasets, please check the details here: [BiomedParseData](assets/readmes/DATASET.md). As a quick start, we've samples a tiny demo dataset at biomedparse_datasets/BiomedParseData-Demo
