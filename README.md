@@ -27,7 +27,7 @@ git clone https://github.com/microsoft/BiomedParse.git
 ### Conda Environment Setup
 ```sh
 conda create -n biomedparse_v2 python=3.10.14
-conda activate biomedprse_v2
+conda activate biomedparse_v2
 ```
 
 Install dependencies
