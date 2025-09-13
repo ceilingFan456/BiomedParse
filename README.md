@@ -33,6 +33,8 @@ conda activate biomedparse_v2
 Install dependencies
 ```sh
 pip install -r assets/requirements.txt
+pip install azureml-automl-core
+pip install opencv-python
 pip install git+https://github.com/facebookresearch/detectron2.git
 ```
 
