@@ -14,8 +14,8 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
-from detectron2.utils.file_io import PathManager
-from detectron2.modeling import BACKBONE_REGISTRY, Backbone, ShapeSpec
+# from detectron2.utils.file_io import PathManager
+from detectron2.modeling import Backbone
 
 
 logger = logging.getLogger(__name__)

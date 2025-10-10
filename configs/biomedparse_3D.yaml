@@ -1,7 +1,0 @@
-defaults:
-  - backbone: d2focal
-  - sem_seg_head: maskformer_head
-_target_: src.biomedparse_3D.BiomedParseModel
-convolute_outputs: False
-out_channels_1: 16
-edge_queries: 4
