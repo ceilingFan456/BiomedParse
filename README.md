@@ -41,11 +41,10 @@ pip install opencv-python
 pip install git+https://github.com/facebookresearch/detectron2.git
 ```
 
-## Model Inference
-The v2 version of BiomedParse supports inference in both 2D and 3D images. The segmentation of 3D volumes is performed in a slice-by-slice 2.5D manner, with neighboring 3D context encoded for each slice in RGB format. Here we provide the example usage of the model weights trained on the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Please acknowledge the original challenge if you use this version of the model.
 
-### Model Weights
-#### Option 1: Hugging Face Hub
+
+## Model Weights
+### Option 1: Hugging Face Hub
 You can download the pretrained model weights directly from the Hugging Face Hub.
 
 First, install the required package:
@@ -66,7 +65,7 @@ file_path = hf_hub_download(
 print("Model weights downloaded to:", file_path)
 ```
 
-#### Option 2: Direct Download via Command Line
+### Option 2: Direct Download via Command Line
 You can also download the file directly using `wget` or `curl`:
 ```bash
 wget https://huggingface.co/microsoft/BiomedParse/resolve/main/biomedparse_v2.ckpt
@@ -85,13 +84,13 @@ curl -L -o biomedparse_v2.ckpt https://huggingface.co/microsoft/BiomedParse/reso
 
 Now you should have the model weights ready for use!
 
-### Fine-tuning BiomedParse V2
+## Fine-tuning BiomedParse V2
 
 Once the model weights are downloaded, you can fine-tune **BiomedParse V2** using our modular YAML configuration system powered by [Hydra](https://hydra.cc/) and [AzureML Olympus](https://learn.microsoft.com/en-us/azure/machine-learning/).
 
 ---
 
-#### 🧩 How Hydra Works
+### 🧩 How Hydra Works
 
 Hydra enables **composable configuration management** — each logical part of training (model, dataset, trainer, optimizer, etc.) is defined in a separate YAML file and referenced in a master config via the `defaults:` list.
 
@@ -123,7 +122,7 @@ python -m azureml.acft.image.components.olympus.app.main \
 
 ---
 
-#### ⚙️ Running the Fine-tuning Job
+### ⚙️ Running the Fine-tuning Job
 
 To launch a fine-tuning run with default parameters, execute:
 
@@ -140,11 +139,11 @@ This will:
 
 ---
 
-#### 🧾 Baseline Configuration
+### 🧾 Baseline Configuration
 
 The baseline configuration is located in the config directories. Start with finetune_biomedparse.yaml and follow the nested structure. 
 
-#### 🧠 Dataset Setup
+### 🧠 Dataset Setup
 
 Datasets are defined using modular configs that allow combining multiple datasets.  
 Example configuration:
@@ -160,7 +159,7 @@ train:
     - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
       root_dir: ${mounts.external}/data/MIP3D_CVPR_FT/MR_crossmoda/processed
 ```
-#### 💾 Checkpoints
+### 💾 Checkpoints
 
 Fine-tuning starts from the pretrained checkpoint specified in your config:
 
@@ -172,7 +171,7 @@ You can replace this path with your own checkpoint for continued training or dom
 
 ---
 
-#### 📦 Outputs
+### 📦 Outputs
 
 Training logs, checkpoints, and metrics are saved to:
 
@@ -184,7 +183,7 @@ Monitor progress in AzureML or your chosen logging backend.
 
 ---
 
-#### ✅ Example Override Commands
+### ✅ Example Override Commands
 
 Change the optimizer and batch size:
 
@@ -206,14 +205,15 @@ python -m azureml.acft.image.components.olympus.app.main \
 
 ---
 
-#### 🔍 Learn More
+### 🔍 Learn More
 
 - [Hydra Documentation](https://hydra.cc/docs/intro/)
 - [AzureML Components](https://learn.microsoft.com/en-us/azure/machine-learning/)
 - [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/)
 
 
-
+## Model Inference
+The v2 version of BiomedParse supports inference in both 2D and 3D images. The segmentation of 3D volumes is performed in a slice-by-slice 2.5D manner, with neighboring 3D context encoded for each slice in RGB format. Here we provide the example usage of the model weights trained on the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Please acknowledge the original challenge if you use this version of the model.
 ### Inference 3D Examples
 ```sh
 import numpy as np
