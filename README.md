@@ -32,39 +32,188 @@ conda activate biomedparse_v2
 
 Install dependencies
 ```sh
-pip install -r assets/requirements.txt
+pip install -r assets/requirements/requirements.txt 
+
+The above requirements file assumes your environment uses cuda12.4 adjust accordingly for your system/environment
+
 pip install azureml-automl-core
 pip install opencv-python
 pip install git+https://github.com/facebookresearch/detectron2.git
 ```
 
-## Model Inference
-The v2 version of BiomedParse supports inference in both 2D and 3D images. The segmentation of 3D volumes is performed in a slice-by-slice 2.5D manner, with neighboring 3D context encoded for each slice in RGB format. Here we provide the example usage of the model weights trained on the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Please acknowledge the original challenge if you use this version of the model.
 
-### Model Weights
-#### Option 1: HuggingFace
-TODO: updated on HuggingFace: https://huggingface.co/microsoft/BiomedParse 
 
-#### Option 2: From Docker image
+## Model Weights
+### Option 1: Hugging Face Hub
+You can download the pretrained model weights directly from the Hugging Face Hub.
 
-Step 1: Download docker container from https://drive.google.com/file/d/1eUAY1qvEzM0Ut0PA9BGp6gexn5TiFWj8/view
-```sh
-mkdir model_weights
-cd model_weights
-gdown --id 1eUAY1qvEzM0Ut0PA9BGp6gexn5TiFWj8
+First, install the required package:
+```bash
+pip install huggingface_hub
 ```
 
-Step 2: Extract model weights
-```sh
-docker load -i biomedparse_alldata.tar.gz
-docker create --name extract biomedparse:latest
-docker cp extract:/workspace/model_weights/biomedparse_3D_AllData_MultiView_edge.ckpt biomedparse_3D_AllData_MultiView_edge.ckpt
-docker rm extract
-cd ..
+Then, download the checkpoint file using the Hugging Face Hub API:
+```python
+from huggingface_hub import hf_hub_download
+
+# Download the checkpoint file
+file_path = hf_hub_download(
+    repo_id="microsoft/BiomedParse",
+    filename="biomedparse_v2.ckpt"
+)
+
+print("Model weights downloaded to:", file_path)
 ```
+
+### Option 2: Direct Download via Command Line
+You can also download the file directly using `wget` or `curl`:
+```bash
+wget https://huggingface.co/microsoft/BiomedParse/resolve/main/biomedparse_v2.ckpt
+```
+or
+```bash
+curl -L -o biomedparse_v2.ckpt https://huggingface.co/microsoft/BiomedParse/resolve/main/biomedparse_v2.ckpt
+```
+
+> 💡 **Note:** If the repository is private, log in with your Hugging Face token using:
+> ```bash
+> huggingface-cli login
+> ```
+> before attempting to download.
+
 
 Now you should have the model weights ready for use!
 
+## Fine-tuning BiomedParse V2
+
+Once the model weights are downloaded, you can fine-tune **BiomedParse V2** using our modular YAML configuration system powered by [Hydra](https://hydra.cc/) and [AzureML Olympus](https://learn.microsoft.com/en-us/azure/machine-learning/).
+
+---
+
+### 🧩 How Hydra Works
+
+Hydra enables **composable configuration management** — each logical part of training (model, dataset, trainer, optimizer, etc.) is defined in a separate YAML file and referenced in a master config via the `defaults:` list.
+
+Example structure of `finetune_biomedparse.yaml`:
+
+```yaml
+defaults:
+  - model: biomedparse
+  - datamodule: biomedparse_finetune_datamodule
+  - trainer: biomedparse_trainer
+  - evaluator: biomedparse_evaluator
+  - loss: biomedparse_loss
+  - optimizer: adamw
+  - olympus_checkpoint: biomedparse_checkpoint_loader
+  - _self_
+```
+
+When you run a job, Hydra automatically merges these component configs into one runtime configuration.  
+You can override any field on the command line without editing YAML files.
+
+For example:
+
+```bash
+python -m azureml.acft.image.components.olympus.app.main \
+  --config-path configs \
+  --config-name finetune_biomedparse \
+  trainer.max_epochs=5 optimizer.lr=5e-5 datamodule.dataloaders.train.batch_size=16
+```
+
+---
+
+### ⚙️ Running the Fine-tuning Job
+
+To launch a fine-tuning run with default parameters, execute:
+
+```bash
+python -m azureml.acft.image.components.olympus.app.main \
+  --config-path configs \
+  --config-name finetune_biomedparse
+```
+
+This will:
+1. Load all YAML config components via Hydra.  
+2. Initialize the Olympus training pipeline.  
+3. Start fine-tuning from the checkpoint defined in the configuration.
+
+---
+
+### 🧾 Baseline Configuration
+
+The baseline configuration is located in the config directories. Start with finetune_biomedparse.yaml and follow the nested structure. 
+
+### 🧠 Dataset Setup
+
+Datasets are defined using modular configs that allow combining multiple datasets.  
+Example configuration:
+
+```yaml
+_target_: azureml.acft.image.components.olympus.core.ModuleDatasets
+train:
+  _target_: torch.utils.data.ConcatDataset
+  _partial_: True
+  datasets:
+    - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
+      root_dir: ${mounts.external}/data/MIP3D_CVPR_FT/PET/processed
+    - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
+      root_dir: ${mounts.external}/data/MIP3D_CVPR_FT/MR_crossmoda/processed
+```
+### 💾 Checkpoints
+
+Fine-tuning starts from the pretrained checkpoint specified in your config:
+
+```yaml
+checkpoint_path: ${mounts.external}/biomedparse_v2.ckpt
+```
+
+You can replace this path with your own checkpoint for continued training or domain adaptation.
+
+---
+
+### 📦 Outputs
+
+Training logs, checkpoints, and metrics are saved to:
+
+```
+${mounts.external}/outputs
+```
+
+Monitor progress in AzureML or your chosen logging backend.
+
+---
+
+### ✅ Example Override Commands
+
+Change the optimizer and batch size:
+
+```bash
+python -m azureml.acft.image.components.olympus.app.main \
+  --config-path configs \
+  --config-name finetune_biomedparse \
+  optimizer=adamw optimizer.lr=1e-4 datamodule.dataloaders.train.batch_size=4
+```
+
+Switch loss function or backbone:
+
+```bash
+python -m azureml.acft.image.components.olympus.app.main \
+  --config-path configs \
+  --config-name finetune_biomedparse \
+  loss=custom_loss model.backbone=resnet101
+```
+
+---
+
+### 🔍 Learn More
+
+- [Hydra Documentation](https://hydra.cc/docs/intro/)
+- [AzureML Components](https://learn.microsoft.com/en-us/azure/machine-learning/)
+- [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/)
+
+
+## Model Inference
+The v2 version of BiomedParse supports inference in both 2D and 3D images. The segmentation of 3D volumes is performed in a slice-by-slice 2.5D manner, with neighboring 3D context encoded for each slice in RGB format. Here we provide the example usage of the model weights trained on the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Please acknowledge the original challenge if you use this version of the model.
 ### Inference 3D Examples
 ```sh
 import numpy as np
