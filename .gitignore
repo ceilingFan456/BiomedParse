@@ -122,3 +122,4 @@ output
 .amlignore*
 model_weights
 pretrained
+outputs

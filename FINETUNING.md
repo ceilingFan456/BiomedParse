@@ -1,67 +1,23 @@
-# **BiomedParse**
-
-[Notice] This is v2 of the [`BiomedParse`](https://aka.ms/biomedparse-paper) model, with improved code and model architecture using [`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf). We also provide end-to-end 3D inference. Check [`v1`](https://github.com/microsoft/BiomedParse/tree/main) if you are looking for the original version.
-
-## What's New in v2?
-
-Since the publication of BiomedParse, we've been collecting feedbacks from the community and making continuous effort to improve and expand its capability and usability. The v2 release provides:
-
-- Larger pretraining data at million scale covering 200+ anatomies across dfferent modalities.
-- Improved segmentation performance for small objects using the [`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf) architecture.
-- SOTA 3D segmentation performance supporting end-to-end volumetric inference ([`CVPR Challenge`](https://www.codabench.org/competitions/5651/))
-- Built-in object existence detection adressing false positives (no seperate mask checking required)
-
-Should I use v1 or v2?
-
-Short answer: v2 for the 3D modalities, and v1 for the rest.
-
-| Version | Image type | Modalities | # tasks | Existence detection |
-|-----|------|------|---------|---------|
-| v1 | 2D   | CT, MRI, Ultrasound, X-Ray, H&E, Endo., Derm., Fundus, OCT | 100+ | Separate K-S test |
-| v2 | 3D   | CT, MRI, Ultrasound, PET, 3D Microscopy (EM, light-sheet)   | 200+ | Built-in ISD module |
-
-
-[[`Paper`](https://aka.ms/biomedparse-paper)] [[`Demo`](https://microsoft.github.io/BiomedParse/)] [[`Model`](https://huggingface.co/microsoft/BiomedParse)]  [[`Data`](https://huggingface.co/datasets/microsoft/BiomedParseData)]  [[`BibTeX`](#Citation)]
-
-This repository hosts the code and resources for **BiomedParse**, aka "A Foundation Model for Joint Segmentation, Detection, and Recognition of Biomedical Objects Across Nine Modalities" ([*Nature Methods*](https://aka.ms/biomedparse-paper)). **BiomedParse** is designed for comprehensive biomedical image analysis. It offers a unified approach to perform **segmentation**, **detection**, and **recognition** across diverse biomedical imaging modalities. By consolidating these tasks, BiomedParse provides an efficient and flexible tool tailored for researchers and practitioners, facilitating the interpretation and analysis of complex biomedical data.
-
-![Example Predictions](assets/readmes/biomedparse_prediction_examples.png)
-
-## News
-- Oct. 14, 2025: BiomedParse v2 release is complete with full support for inference and finetuning! 
-- Jun. 11, 2025: BiomedParse is #1 in the [`CVPR 2025: Foundation Models for Text-guided 3D Biomedical Image Segmentation Challenge`](https://www.codabench.org/competitions/5651/)! We upgraded our model and finetuned on the challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM) with a wider and more comprehensive coverage for 3D biomedical imaging data. Checkout our model in containerized [[`docker image`](https://drive.google.com/file/d/1eUAY1qvEzM0Ut0PA9BGp6gexn5TiFWj8/view?usp=sharing)] for direct inference. Please acknowledge the original challenge if you use this version of the model.
-- Jan. 9, 2025: Refined all object recognition script and added notebook with examples.
-- Dec. 12, 2024: Uploaded extra datasets for finetuning on [[`Data`](https://huggingface.co/datasets/microsoft/BiomedParseData)]. Added random rotation feature for training.
-- Dec. 5, 2024: The loading process of target_dist.json is optimized by automatic downloading from HuggingFace.
-- Dec. 3, 2024: We added inference notebook examples in inference_example_RGB.ipynb and inference_example_NIFTI.ipynb
-- Nov. 22, 2024: We added negative prediction p-value example in inference_example_DICOM.ipynb
-- Nov. 18, 2024: BiomedParse is officially online in [*Nature Methods*](https://aka.ms/biomedparse-paper)!
-
-## Installation
-```sh
-git clone https://github.com/microsoft/BiomedParse.git
+## Preparations
+You need to prepare the public model checkpoint and finetuning data. Save them under ```<YOUR MODEL AND DATA DIR>``` and put it in `finetune_biomedparse.yaml` as
+```yaml
+mounts:
+  external: <YOUR MODEL AND DATA DIR>
 ```
-
-### Conda Environment Setup
-```sh
-conda create -n biomedparse_v2 python=3.10.14
-conda activate biomedparse_v2
-```
-
-Install dependencies
-```sh
-pip install -r assets/requirements/requirements.txt 
-
-The above requirements file assumes your environment uses cuda12.4. Adjust accordingly for your system/environment
-
-pip install azureml-automl-core
-pip install opencv-python
-pip install git+https://github.com/facebookresearch/detectron2.git
-```
-
 
 
 ## Model Weights
+Download the pretrained checkpoint ```biomedparse_v2.ckpt``` and put it under ```<YOUR MODEL AND DATA DIR>```
+### 💾 Checkpoints
+
+Fine-tuning starts from the pretrained checkpoint specified in your config:
+
+```yaml
+checkpoint_path: ${mounts.external}/biomedparse_v2.ckpt
+```
+
+You can replace this path with your own checkpoint for continued training or domain adaptation.
+
 ### Option 1: Hugging Face Hub
 You can download the pretrained model weights directly from the Hugging Face Hub.
 
@@ -102,73 +58,109 @@ curl -L -o biomedparse_v2.ckpt https://huggingface.co/microsoft/BiomedParse/reso
 
 Now you should have the model weights ready for use!
 
+## Data Preparation
+Store your finetuning data under ```<YOUR MODEL AND DATA DIR>/data```
 
-## Model Inference
-The v2 version of BiomedParse supports segmentation of 3D volumes in a slice-by-slice 2.5D manner, with neighboring 3D context encoded for each slice in RGB format. Here we provide the example usage of the model weights trained on the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Please acknowledge the original challenge if you use this version of the model. We also refer to the original dataset for necessary image preprocessing.
+### 🧠 Dataset Setup
 
-### Inference 3D Examples
-```sh
-import numpy as np
-import torch
-import torch.nn.functional as F
-import hydra
-from hydra import compose
-from hydra.core.global_hydra import GlobalHydra
-from utils import process_input, process_output, slice_nms
-from inference import postprocess, merge_multiclass_masks
-from skimage import segmentation
-from huggingface_hub import hf_hub_download
+Datasets are defined using modular configs that allow combining multiple datasets.  
+Example configuration:
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("Using device:", device)
-
-GlobalHydra.instance().clear()
-hydra.initialize(config_path="configs/model", job_name="example_prediction")
-cfg = compose(config_name="biomedparse_3D")
-model = hydra.utils.instantiate(cfg, _convert_="object")
-model.load_pretrained(hf_hub_download(
-  repo_id="microsoft/BiomedParse", filename="biomedparse_v2.ckpt"))
-model = model.to(device).eval()
-
-# Example image and prompt
-file_path = "examples/imgs/CT_AMOS_amos_0018.npz"
-
-npz_data = np.load(file_path, allow_pickle=True)
-imgs = npz_data["imgs"]
-text_prompts = npz_data["text_prompts"].item()
-
-print("Loaded image shape:", imgs.shape)
-print("Text prompts:", text_prompts)
-
-ids = [int(_) for _ in text_prompts.keys() if _ != "instance_label"]
-ids.sort()
-text = "[SEP]".join([text_prompts[str(i)] for i in ids])
-
-imgs, pad_width, padded_size, valid_axis = process_input(imgs, 512)
-
-imgs = imgs.to(device).int()
-
-input_tensor = {
-    "image": imgs.unsqueeze(0),  # Add batch dimension
-    "text": [text],
-}
-
-with torch.no_grad():
-    output = model(input_tensor, mode="eval", slice_batch_size=4)
-
-mask_preds = output["predictions"]["pred_gmasks"]
-mask_preds = F.interpolate(mask_preds, size=(512, 512), mode="bicubic", align_corners=False, antialias=True)
-
-mask_preds = postprocess(mask_preds, output["predictions"]["object_existence"])
-mask_preds = merge_multiclass_masks(mask_preds, ids)
-mask_preds = process_output(mask_preds, pad_width, padded_size, valid_axis)
-print("Processed mask shape:", mask_preds.shape)
+```yaml
+_target_: azureml.acft.image.components.olympus.core.ModuleDatasets
+train:
+  _target_: torch.utils.data.ConcatDataset
+  _partial_: True
+  datasets:
+    - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
+      root_dir: ${mounts.external}/data/PET/processed
+    - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
+      root_dir: ${mounts.external}/data/MR_crossmoda/processed
 ```
 
-Please refer to the [inference notebook](inference_example_3D.ipynb) for more examples.
 
 ## Fine-tuning BiomedParse V2
-Want to improve performance for your specific tasks? Here is a detailed instruction for end-to-end finetuning on your own data: [FINETUNING](assets/readmes/FINETUNING.md)
+
+Once the model weights are downloaded, you can fine-tune **BiomedParse V2** using our modular YAML configuration system powered by [Hydra](https://hydra.cc/) and [AzureML Olympus](https://learn.microsoft.com/en-us/azure/machine-learning/).
+
+---
+
+### 🧩 How Hydra Works
+
+Hydra enables **composable configuration management** — each logical part of training (model, dataset, trainer, optimizer, etc.) is defined in a separate YAML file and referenced in a master config via the `defaults:` list.
+
+Example structure of `finetune_biomedparse.yaml`:
+
+```yaml
+defaults:
+  - model: biomedparse
+  - datamodule: biomedparse_finetune_datamodule
+  - trainer: biomedparse_trainer
+  - evaluator: biomedparse_evaluator
+  - loss: biomedparse_loss
+  - optimizer: adamw
+  - olympus_checkpoint: biomedparse_checkpoint_loader
+  - _self_
+```
+
+When you run a job, Hydra automatically merges these component configs into one runtime configuration.  
+
+---
+
+### ⚙️ Running the Fine-tuning Job
+
+To launch a fine-tuning run with default parameters, execute:
+
+```bash
+python -m azureml.acft.image.components.olympus.app.main \
+  --config-path <YOUR ABSOLUTE CONFIG DIRECTORY PATH> \
+  --config-name finetune_biomedparse
+```
+
+This will:
+1. Load all YAML config components via Hydra.  
+2. Initialize the Olympus training pipeline.  
+3. Start fine-tuning from the checkpoint defined in the configuration.
+
+---
+
+### 🧾 Baseline Configuration
+
+The baseline configuration is located in the config directories. Start with finetune_biomedparse.yaml and follow the nested structure. 
+
+---
+
+### 📦 Outputs
+
+Training logs, checkpoints, and metrics are saved to:
+
+```
+${mounts.external}/outputs
+```
+
+Monitor progress in AzureML or your chosen logging backend.
+
+---
+
+### ✅ Example Override Commands
+You can override any field on the command line without editing YAML files.
+
+Change the optimizer and batch size:
+
+```bash
+python -m azureml.acft.image.components.olympus.app.main \
+  --config-path <YOUR ABSOLUTE CONFIG DIRECTORY PATH> \
+  --config-name finetune_biomedparse \
+  optimizer=adamw optimizer.lr=1e-4 datamodule.dataloaders.train.batch_size=16
+```
+
+---
+
+### 🔍 Learn More
+
+- [Hydra Documentation](https://hydra.cc/docs/intro/)
+- [AzureML Components](https://learn.microsoft.com/en-us/azure/machine-learning/)
+- [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/)
 
 
 <!-- ## Dataset
