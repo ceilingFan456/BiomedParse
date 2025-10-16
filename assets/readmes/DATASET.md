@@ -1,42 +1,126 @@
-# **BiomedParseData**
+## Data Preparation
+Your finetuning datasets should be stored under ```<YOUR MODEL AND DATA DIR>/data```. We support mixed training and sequential evaluation on multiple datasets. Each finetuning dataset should have 3D images and corresponding segmentation masks, as well as textual description of each class. The class definition can be different across different datasets, as long as they are described by the text prompts correctly.
 
-BiomedParseData was created from preprocessing publicly available biomedical image segmentation datasets. 
+### Data Format
+We follow the format of the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Specifically, each training example is an ```npz``` file containing:
+- ```imgs```: image data; shape: (D,H,W); Intensity range: [0, 255]
+- ```gts```: ground truth; shape: (D,H,W);
+- ```spacing```
 
-These datasets are provided pre-formatted for convenience. For additional information about the datasets or their licenses, please reach out to the owners:
-| Dataset                               | URL |
-|---------------------------------------|-----|
-| amos22                                | [https://amos22.grand-challenge.org/](https://amos22.grand-challenge.org/) |
-| MSD (Medical Segmentation Decathlon)  | [http://medicaldecathlon.com/](http://medicaldecathlon.com/) |
-| KiTS23                                | [https://github.com/neheller/kits23](https://github.com/neheller/kits23) |
-| BTCV                                  | [https://www.synapse.org/#!Synapse:syn3193805/wiki/217790](https://www.synapse.org/#!Synapse:syn3193805/wiki/217790) |
-| COVID-19 CT                           | [https://www.kaggle.com/datasets/andrewmvd/covid19-ct-scans](https://www.kaggle.com/datasets/andrewmvd/covid19-ct-scans) |
-| LIDR-IDRI                             | [https://wiki.cancerimagingarchive.net/display/Public/LIDC-IDRI](https://wiki.cancerimagingarchive.net/display/Public/LIDC-IDRI) |
-| ACDC                                  | [https://www.creatis.insa-lyon.fr/Challenge/acdc/databases.html](https://www.creatis.insa-lyon.fr/Challenge/acdc/databases.html) |
-| M&Ms                                  | [https://www.ub.edu/mnms/](https://www.ub.edu/mnms/) |
-| PROMISE12                             | [cite https://doi.org/10.1016/j.media.2013.12.002](https://doi.org/10.1016/j.media.2013.12.002) |
-| LGG                                   | [https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation](https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation) |
-| COVID-QU-Ex                           | [https://www.kaggle.com/datasets/anasmohammedtahir/covidqu](https://www.kaggle.com/datasets/anasmohammedtahir/covidqu) |
-| QaTa-COV19                            | [https://www.kaggle.com/datasets/aysendegerli/qatacov19-dataset](https://www.kaggle.com/datasets/aysendegerli/qatacov19-dataset) |
-| SIIM-ACR Pneumothorax Segmentation    | [https://www.kaggle.com/datasets/vbookshelf/pneumothorax-chest-xray-images-and-masks](https://www.kaggle.com/datasets/vbookshelf/pneumothorax-chest-xray-images-and-masks) |
-| Chest Xray Masks and Labels Dataset   | [https://datasetninja.com/chest-xray](https://datasetninja.com/chest-xray) |
-| COVID-19 Radiography Database         | [https://www.kaggle.com/datasets/tawsifurrahman/covid19-radiography-database](https://www.kaggle.com/datasets/tawsifurrahman/covid19-radiography-database) |
-| CAMUS                                 | [https://www.creatis.insa-lyon.fr/Challenge/camus/index.html](https://www.creatis.insa-lyon.fr/Challenge/camus/index.html) |
-| BUSI                                  | [https://scholar.cu.edu.eg/?q=afahmy/pages/dataset](https://scholar.cu.edu.eg/?q=afahmy/pages/dataset) |
-| FH-PS-AOP                             | [https://zenodo.org/records/7851339#.ZEH6eHZBztU](https://zenodo.org/records/7851339#.ZEH6eHZBztU) |
-| CDD-CESM                              | [https://www.cancerimagingarchive.net/collection/cdd-cesm/](https://www.cancerimagingarchive.net/collection/cdd-cesm/) |
-| PolypGen                              | [https://www.synapse.org/#!Synapse:syn26376615/wiki/613312](https://www.synapse.org/#!Synapse:syn26376615/wiki/613312) |
-| NeoPolyp                              | [https://www.kaggle.com/c/bkai-igh-neopolyp/data](https://www.kaggle.com/c/bkai-igh-neopolyp/data) |
-| ISIC 2018                             | [https://challenge2018.isic-archive.com/task1/](https://challenge2018.isic-archive.com/task1/) |
-| UwaterlooSkinCancer                   | [Skin Cancer Detection \| Vision and Image Processing Lab \| University of Waterloo](https://uwaterloo.ca) |
-| OCT-CME                               | [https://www.kaggle.com/datasets/zeeshanahmed13/intraretinal-cystoid-fluid](https://www.kaggle.com/datasets/zeeshanahmed13/intraretinal-cystoid-fluid) |
-| REFUGE                                | [https://bitbucket.org/woalsdnd/refuge/src](https://bitbucket.org/woalsdnd/refuge/src) |
-| G1020                                 | [https://www.dfki.uni-kl.de/g1020](https://www.dfki.uni-kl.de/g1020) |
-| DRIVE                                 | [https://drive.grand-challenge.org/](https://drive.grand-challenge.org/) |
-| GlaS                                  | [https://warwick.ac.uk/fac/cross_fac/tia/data/glascontest/](https://warwick.ac.uk/fac/cross_fac/tia/data/glascontest/) |
-| PanNuke                               | [https://jgamper.github.io/PanNukeDataset/](https://jgamper.github.io/PanNukeDataset/) |
-| FUMPE                                 | [https://figshare.com/collections/FUMPE/4107803/1](https://figshare.com/collections/FUMPE/4107803/1) |
-| TotalSegmentator                      | [https://github.com/wasserth/TotalSegmentator](https://github.com/wasserth/TotalSegmentator) |
-| BraTS2023                             | [https://www.synapse.org/#!Synapse:syn51156910/wiki/621282](https://www.synapse.org/#!Synapse:syn51156910/wiki/621282) |
-| AbdomenCT-1K                          | [https://github.com/JunMa11/AbdomenCT-1K](https://github.com/JunMa11/AbdomenCT-1K) |
-| US Simulation & Segmentation          | [https://www.kaggle.com/datasets/ignaciorlando/ussimandsegm](https://www.kaggle.com/datasets/ignaciorlando/ussimandsegm) |
-| CDD-CESM                              | [https://www.cancerimagingarchive.net/collection/cdd-cesm/](https://www.cancerimagingarchive.net/collection/cdd-cesm/) |
+#### Folder Structure
+```
+<YOUR MODEL AND DATA DIR>/data/
+├── class_prompts.json
+├── DATASET1/
+|   └── train/
+|       ├── ex1.npz
+|       ├── ex1.npz
+│       └── ...
+├── DATASET2/
+|   └── train/
+|       ├── ex1.npz
+|       ├── ex1.npz
+│       └── ...
+└── DATASET3/
+    └── train/
+        ├── ex1.npz
+        ├── ex1.npz
+        └── ...
+```
+
+```class_prompts.json``` is a json file containing the prompts for each datasets dataset, e.g.
+
+```
+{
+    "DATASET1": { 
+        "1": [
+            "Liver",
+            "Liver in abdominal CT",
+            "CT imaging of the liver in the abdomen",
+            ...
+        ],
+        "2": [
+            "Pancreas",
+            "Pancreas in abdominal CT",
+            "CT imaging of the pancreas in the abdomen",
+            ...
+        ],
+        "instance_label": 0
+    },
+    "DATASET2": {
+        "1": [
+            "Lesion",
+            "Lesion in whole body PET",
+            "PET imaging of the lesion in the whole body region",
+            ...
+        ],
+        "instance_label": 1
+    },
+    "DATASET3": { 
+        "1": [
+            "Intra-meatal region of vestibular schwannoma",
+            "Intra-meatal region of vestibular schwannoma in brain MR",
+            "MR imaging of intra-meatal region of vestibular schwannoma in brain",
+            ...
+        ],
+        "2": [
+            "Right cochlea",
+            "Right cochlea in brain MR",
+            "MR imaging of right cochlea in brain",
+            ...
+        ],
+        "instance_label": 0
+    }
+}
+```
+
+```'instance_label'``` indicates the definition for the segmentation masks. 0 denotes semantic segmentation, where each index in ```gts``` corresponds to the index of the text prompts. 1 denotes instance segmentation where each index in ```gts``` corresponds to the instance index (e.g. cell #17 or lesion #2) of the same class, in which case there should only be one class for the dataset.
+
+### Data Processing
+BiomedParse v2 uses fractal volumetric encoding to combine multiple slices in a 3D volume into a single RGB image in 2D. Therefore, the model can be trained in 2D completely, and able to do inference in 3D using volumetric context. We provides a simple processing script ```process_2D.py```. Simply put it under your data folder, specify the dataset names in the script, and run it. This will process all the datasets and save the 2D images, which are ready for finetuning. The folder structure after the processing will be
+
+```
+<YOUR MODEL AND DATA DIR>/data/
+├── process_2D.py
+├── class_prompts.json
+├── DATASET1/
+|   ├── train/
+|   |   ├── ex1.npz
+|   |   ├── ex1.npz
+│   |   └── ...
+|   └── processed/
+|       ├── train
+|       |   ├── slice1.png
+|       |   ├── slice2.png
+│       |   └── ...
+|       ├── train_mask
+|       |   ├── slice1.png
+|       |   ├── slice2.png
+│       |   └── ...
+│       └── train.json
+└── ...
+```
+
+### Config Setup
+
+Datasets are defined using modular configs that allow combining multiple datasets.  
+Example configuration:
+
+```yaml
+_target_: azureml.acft.image.components.olympus.core.ModuleDatasets
+train:
+  _target_: torch.utils.data.ConcatDataset
+  _partial_: True
+  datasets:
+    - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
+      root_dir: ${mounts.external}/data/DATASET1/processed
+    - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
+      root_dir: ${mounts.external}/data/DATASET2/processed
+    - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
+      root_dir: ${mounts.external}/data/DATASET3/processed
+```
+Put it in ```configs/datamodule/datasets/biomedparse/biomedparse_finetune_dataset.yaml```, and you are ready to run finetuning jobs using the datasets.
+
+
+### Evaluation
+Finetuning evaluation data format follows exactly the same as the main evaluation. Simply create a folder and put images and masks ```npz``` files under ```test/``` and ```test_mask/``` respectively.

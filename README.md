@@ -2,6 +2,12 @@
 
 [Notice] This is v2 of the [`BiomedParse`](https://aka.ms/biomedparse-paper) model, with improved code and model architecture using [`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf). We also provide end-to-end 3D inference. Check [`v1`](https://github.com/microsoft/BiomedParse/tree/main) if you are looking for the original version.
 
+[[`Paper`](https://aka.ms/biomedparse-paper)] [[`Demo`](https://microsoft.github.io/BiomedParse/)] [[`Model`](https://huggingface.co/microsoft/BiomedParse)]  [[`Data`](https://huggingface.co/datasets/microsoft/BiomedParseData)]  [[`BibTeX`](#Citation)]
+
+This repository hosts the code and resources for **BiomedParse**, aka "A Foundation Model for Joint Segmentation, Detection, and Recognition of Biomedical Objects Across Nine Modalities" ([*Nature Methods*](https://aka.ms/biomedparse-paper)). **BiomedParse** is designed for comprehensive biomedical image analysis. It offers a unified approach to perform **segmentation**, **detection**, and **recognition** across diverse biomedical imaging modalities. By consolidating these tasks, BiomedParse provides an efficient and flexible tool tailored for researchers and practitioners, facilitating the interpretation and analysis of complex biomedical data.
+
+![Example Predictions](assets/readmes/biomedparse_prediction_examples.png)
+
 ## What's New in v2?
 
 Since the publication of BiomedParse, we've been collecting feedbacks from the community and making continuous effort to improve and expand its capability and usability. The v2 release provides:
@@ -21,14 +27,10 @@ Short answer: v2 for the 3D modalities, and v1 for the rest.
 | v2 | 3D   | CT, MRI, Ultrasound, PET, 3D Microscopy (EM, light-sheet)   | 200+ | Built-in ISD module |
 
 
-[[`Paper`](https://aka.ms/biomedparse-paper)] [[`Demo`](https://microsoft.github.io/BiomedParse/)] [[`Model`](https://huggingface.co/microsoft/BiomedParse)]  [[`Data`](https://huggingface.co/datasets/microsoft/BiomedParseData)]  [[`BibTeX`](#Citation)]
 
-This repository hosts the code and resources for **BiomedParse**, aka "A Foundation Model for Joint Segmentation, Detection, and Recognition of Biomedical Objects Across Nine Modalities" ([*Nature Methods*](https://aka.ms/biomedparse-paper)). **BiomedParse** is designed for comprehensive biomedical image analysis. It offers a unified approach to perform **segmentation**, **detection**, and **recognition** across diverse biomedical imaging modalities. By consolidating these tasks, BiomedParse provides an efficient and flexible tool tailored for researchers and practitioners, facilitating the interpretation and analysis of complex biomedical data.
-
-![Example Predictions](assets/readmes/biomedparse_prediction_examples.png)
 
 ## News
-- Oct. 14, 2025: BiomedParse v2 release is complete with full support for inference and finetuning! 
+- Oct. 15, 2025: BiomedParse v2 release is complete with full support for inference and finetuning! 
 - Jun. 11, 2025: BiomedParse is #1 in the [`CVPR 2025: Foundation Models for Text-guided 3D Biomedical Image Segmentation Challenge`](https://www.codabench.org/competitions/5651/)! We upgraded our model and finetuned on the challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM) with a wider and more comprehensive coverage for 3D biomedical imaging data. Checkout our model in containerized [[`docker image`](https://drive.google.com/file/d/1eUAY1qvEzM0Ut0PA9BGp6gexn5TiFWj8/view?usp=sharing)] for direct inference. Please acknowledge the original challenge if you use this version of the model.
 - Jan. 9, 2025: Refined all object recognition script and added notebook with examples.
 - Dec. 12, 2024: Uploaded extra datasets for finetuning on [[`Data`](https://huggingface.co/datasets/microsoft/BiomedParseData)]. Added random rotation feature for training.
@@ -166,6 +168,20 @@ print("Processed mask shape:", mask_preds.shape)
 ```
 
 Please refer to the [inference notebook](inference_example_3D.ipynb) for more examples.
+
+## Evaluation
+You need to prepare the public model checkpoint and evaluation data under ```<YOUR MODEL AND DATA DIR>``` and put it in `evaluate_biomedparse.yaml` as
+```yaml
+mounts:
+  external: <YOUR MODEL AND DATA DIR>
+```
+Download the validation set of the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Save the [`validation images`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM/tree/main/3D_val_npz)  to ```<YOUR MODEL AND DATA DIR>/data/test```, and [`validation masks`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM/tree/main/3D_val_gt/3D_val_gt_text)  to ```<YOUR MODEL AND DATA DIR>/data/test_mask```. Run
+
+```bash
+python -m azureml.acft.image.components.olympus.app.main \
+  --config-path <YOUR ABSOLUTE CONFIG DIRECTORY PATH> \
+  --config-name evaluate_biomedparse
+```
 
 ## Fine-tuning BiomedParse V2
 Want to improve performance for your specific tasks? Here is a detailed instruction for end-to-end finetuning on your own data: [FINETUNING](assets/readmes/FINETUNING.md)

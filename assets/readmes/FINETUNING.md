@@ -1,5 +1,5 @@
 ## Preparations
-You need to prepare the public model checkpoint and finetuning data. Save them under ```<YOUR MODEL AND DATA DIR>``` and put it in `finetune_biomedparse.yaml` as
+You need to prepare the public model checkpoint and finetuning data under ```<YOUR MODEL AND DATA DIR>``` and put it in `finetune_biomedparse.yaml` as
 ```yaml
 mounts:
   external: <YOUR MODEL AND DATA DIR>
@@ -8,15 +8,6 @@ mounts:
 
 ## Model Weights
 Download the pretrained checkpoint ```biomedparse_v2.ckpt``` and put it under ```<YOUR MODEL AND DATA DIR>```
-### 💾 Checkpoints
-
-Fine-tuning starts from the pretrained checkpoint specified in your config:
-
-```yaml
-checkpoint_path: ${mounts.external}/biomedparse_v2.ckpt
-```
-
-You can replace this path with your own checkpoint for continued training or domain adaptation.
 
 ### Option 1: Hugging Face Hub
 You can download the pretrained model weights directly from the Hugging Face Hub.
@@ -58,30 +49,23 @@ curl -L -o biomedparse_v2.ckpt https://huggingface.co/microsoft/BiomedParse/reso
 
 Now you should have the model weights ready for use!
 
-## Data Preparation
-Store your finetuning data under ```<YOUR MODEL AND DATA DIR>/data```
+### 💾 Custom Checkpoints
 
-### 🧠 Dataset Setup
-
-Datasets are defined using modular configs that allow combining multiple datasets.  
-Example configuration:
+Fine-tuning starts from the pretrained checkpoint specified in your config ```configs/olympus_checkpoint/biomedparse_checkpoint_loader.yaml```:
 
 ```yaml
-_target_: azureml.acft.image.components.olympus.core.ModuleDatasets
-train:
-  _target_: torch.utils.data.ConcatDataset
-  _partial_: True
-  datasets:
-    - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
-      root_dir: ${mounts.external}/data/PET/processed
-    - _target_: src.datasets.biomedparse_dataset.BiomedParseDataset
-      root_dir: ${mounts.external}/data/MR_crossmoda/processed
+checkpoint_path: ${mounts.external}/biomedparse_v2.ckpt
 ```
+
+You can replace this path with your own checkpoint for continued training or domain adaptation.
+
+## Data Preparation
+Your finetuning data should be stored under ```<YOUR MODEL AND DATA DIR>/data```. We provided detailed instruction in [DATASET](DATASET.md).
 
 
 ## Fine-tuning BiomedParse V2
 
-Once the model weights are downloaded, you can fine-tune **BiomedParse V2** using our modular YAML configuration system powered by [Hydra](https://hydra.cc/) and [AzureML Olympus](https://learn.microsoft.com/en-us/azure/machine-learning/).
+Once the model weights are downloaded and datasets are prepared, you can fine-tune **BiomedParse V2** using our modular YAML configuration system powered by [Hydra](https://hydra.cc/) and [AzureML Olympus](https://learn.microsoft.com/en-us/azure/machine-learning/).
 
 ---
 
