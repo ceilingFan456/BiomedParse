@@ -1,6 +1,6 @@
 # **BiomedParse**
 
-[Notice] This is v2 of the [`BiomedParse`](https://aka.ms/biomedparse-paper) model, with improved code and model architecture using [`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf). We also provide end-to-end 3D inference. Check [`v1`](https://github.com/microsoft/BiomedParse/tree/main) if you are looking for the original version.
+[Notice] This is v2 of the [`BiomedParse`](https://aka.ms/biomedparse-paper) model, with improved code and model architecture using [`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf), supporting end-to-end 3D inference. Check [`v1`](https://github.com/microsoft/BiomedParse/tree/main) if you are looking for the original version.
 
 [[`Paper`](https://aka.ms/biomedparse-paper)] [[`Demo`](https://microsoft.github.io/BiomedParse/)] [[`Model`](https://huggingface.co/microsoft/BiomedParse)]  [[`Data`](https://huggingface.co/datasets/microsoft/BiomedParseData)]  [[`BibTeX`](#Citation)]
 
@@ -10,12 +10,12 @@ This repository hosts the code and resources for **BiomedParse**, aka "A Foundat
 
 ## What's New in v2?
 
-Since the publication of BiomedParse, we've been collecting feedbacks from the community and making continuous effort to improve and expand its capability and usability. The v2 release provides:
+Since the publication of BiomedParse, we've been continuously collecting feedbacks from the community and making progressive efforts to improve and expand its capability and usability. The v2 release provides:
 
-- Larger pretraining data at million scale covering 200+ anatomies across dfferent modalities.
+- Larger [`pretraining data`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM) at million scale covering ['200+ anatomies'](https://github.com/microsoft/BiomedParse?tab=readme-ov-file#supported-tasks) across different modalities.
 - Improved segmentation performance for small objects using the [`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf) architecture.
-- SOTA 3D segmentation performance supporting end-to-end volumetric inference ([`CVPR Challenge`](https://www.codabench.org/competitions/5651/))
-- Built-in object existence detection adressing false positives (no seperate mask checking required)
+- SOTA 3D segmentation performance supporting end-to-end volumetric inference ([`CVPR Challenge`](https://www.codabench.org/competitions/5651/)).
+- Built-in object existence detection for false positives (no seperate mask checking required).
 
 Should I use v1 or v2?
 
@@ -23,8 +23,8 @@ Short answer: v2 for the 3D modalities, and v1 for the rest.
 
 | Version | Image type | Modalities | # tasks | Existence detection |
 |-----|------|------|---------|---------|
-| v1 | 2D   | CT, MRI, Ultrasound, X-Ray, H&E, Endo., Derm., Fundus, OCT | 100+ | Separate K-S test |
-| v2 | 3D   | CT, MRI, Ultrasound, PET, 3D Microscopy (EM, light-sheet)   | 200+ | Built-in ISD module |
+| v1 | 2D   | CT, MRI, Ultrasound, X-Ray, Pathology, Endoscopy, Dermoscopy, Fundus, OCT | 100+ | Post-inference K-S test |
+| v2 | 3D   | CT, MRI, Ultrasound, PET, 3D Microscopy (EM, lightsheet)   | [200+](https://github.com/microsoft/BiomedParse?tab=readme-ov-file#supported-tasks) | Built-in ISD module |
 
 
 
@@ -54,7 +54,7 @@ Install dependencies
 ```sh
 pip install -r assets/requirements/requirements.txt 
 
-The above requirements file assumes your environment uses cuda12.4. Adjust accordingly for your system/environment
+# The above requirements file assumes your environment uses cuda12.4. Adjust accordingly for your system/environment
 
 pip install azureml-automl-core
 pip install opencv-python
@@ -64,15 +64,16 @@ pip install git+https://github.com/facebookresearch/detectron2.git
 
 
 ## Model Weights
-### Option 1: Hugging Face Hub
-You can download the pretrained model weights directly from the Hugging Face Hub.
+We provides model weights trained on the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Please acknowledge the original challenge if you use this version of the model. We also refer to the original dataset for necessary image preprocessing.
+### Option 1: HuggingFace Hub
+You can download the pretrained model weights directly from the HuggingFace Hub.
 
 First, install the required package:
 ```bash
 pip install huggingface_hub
 ```
 
-Then, download the checkpoint file using the Hugging Face Hub API:
+Then, download the checkpoint file using the HuggingFace Hub API:
 ```python
 from huggingface_hub import hf_hub_download
 
@@ -95,7 +96,7 @@ or
 curl -L -o biomedparse_v2.ckpt https://huggingface.co/microsoft/BiomedParse/resolve/main/biomedparse_v2.ckpt
 ```
 
-> 💡 **Note:** If the repository is private, log in with your Hugging Face token using:
+> 💡 **Note:** If the repository is private, log in with your HuggingFace token using:
 > ```bash
 > huggingface-cli login
 > ```
@@ -106,7 +107,7 @@ Now you should have the model weights ready for use!
 
 
 ## Model Inference
-The v2 version of BiomedParse supports segmentation of 3D volumes in a slice-by-slice 2.5D manner, with neighboring 3D context encoded for each slice in RGB format. Here we provide the example usage of the model weights trained on the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Please acknowledge the original challenge if you use this version of the model. We also refer to the original dataset for necessary image preprocessing.
+The v2 of BiomedParse supports segmentation of 3D volumes in a slice-by-slice manner, with neighboring 3D context encoded around each slice in RGB format. 
 
 ### Inference 3D Examples
 ```sh
@@ -175,7 +176,7 @@ You need to prepare the public model checkpoint and evaluation data under ```<YO
 mounts:
   external: <YOUR MODEL AND DATA DIR>
 ```
-Download the validation set of the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Save the [`validation images`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM/tree/main/3D_val_npz)  to ```<YOUR MODEL AND DATA DIR>/data/test```, and [`validation masks`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM/tree/main/3D_val_gt/3D_val_gt_text)  to ```<YOUR MODEL AND DATA DIR>/data/test_mask```. Run
+Save the model checkpoint under ```<YOUR MODEL AND DATA DIR>```. Download the validation set of the CVPR 2025 Text-guided 3D Segmentation Challenge [`dataset`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM). Save the [`validation images`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM/tree/main/3D_val_npz)  to ```<YOUR MODEL AND DATA DIR>/data/test```, and [`validation masks`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM/tree/main/3D_val_gt/3D_val_gt_text)  to ```<YOUR MODEL AND DATA DIR>/data/test_mask```. Run
 
 ```bash
 python -m azureml.acft.image.components.olympus.app.main \
@@ -183,9 +184,16 @@ python -m azureml.acft.image.components.olympus.app.main \
   --config-name evaluate_biomedparse
 ```
 
-## Fine-tuning BiomedParse V2
+## Fine-tuning
 Want to improve performance for your specific tasks? Here is a detailed instruction for end-to-end finetuning on your own data: [FINETUNING](assets/readmes/FINETUNING.md)
 
+## Supported Tasks
+- **CT**: oncology/pathology (adrenocortical carcinoma, kidney lesions/cysts L/R, liver tumors, lung lesions, pancreas tumors, head–neck cancer, colon cancer primaries, COVID-19, whole-body lesion, lymph nodes); thoracic (lungs L/R, lobes LUL/LLL/RUL/RML/RLL, trachea, airway tree); abdomen/pelvis (spleen, liver, gallbladder, stomach, pancreas, duodenum, small bowel, colon, esophagus); GU/endocrine (kidneys L/R, adrenal glands L/R, bladder, prostate, uterus); vascular (aorta/tree, SVC, IVC, pulmonary vein, brachiocephalic trunk, subclavian/carotid arteries L/R, brachiocephalic veins L/R, left atrial appendage, portal/splenic vein, iliac arteries/veins L/R); cardiac (heart); head/neck (carotids L/R, submandibular/parotid/lacrimal glands L/R, thyroid, larynx glottic/supraglottic, lips, buccal mucosa, oral cavity, cervical esophagus, cricopharyngeal inlet, arytenoids, eyeball segments ant/post L/R, optic chiasm, optic nerves L/R, cochleae L/R, pituitary, brainstem, spinal cord); neuro/cranial (brain, skull, Circle of Willis CTA); spine/MSK (sacrum, vertebrae C1–S1, humeri/scapulae/clavicles/femora/hips L/R, gluteus maximus/medius/minimus L/R, autochthon L/R, iliopsoas L/R).
+- **MRI**: abdomen/pelvis (spleen, liver, gallbladder, stomach, pancreas, duodenum, small bowel, colon whole, esophagus, bladder, prostate, uterus); colon segments (cecum, appendix, ascending, transverse, descending, sigmoid, rectum); GU (prostate transition zone, prostate lesion); cardiac CMR (LV, RV, myocardium, LA, RA); thoracic (lungs L/R); vascular (aorta, pulmonary artery, SVC, IVC, portal/splenic vein, iliac arteries/veins L/R, carotid arteries L/R, jugular veins L/R); neuro tumors/ischemia (brain, brain tumor, stroke lesion, GTVp/GTVn tumor, vestibular schwannoma intra/extra-meatal, cochleae L/R); glioma components (non-enhancing tumor core, non-enhancing FLAIR hyperintensity, enhancing tissue, resection cavity); white matter disease (WM hyperintensities FLAIR/T1); neurovascular (Circle of Willis MRA); spine/MSK (sacrum, vertebrae regional, discs, spinal canal/cord, humeri/femora/hips L/R, gluteus maximus/medius/minimus L/R, autochthon L/R, iliopsoas L/R).
+- **Ultrasound**: cardiac (LV, myocardium, LA), neck (thyroid, carotid artery, jugular vein), neuro (brain tumor), calf MSK (soleus, gastrocnemius medialis/lateralis).
+- **PET**: whole-body lesion.
+- **Electron Microscopy**: endolysosomes, mitochondria, nuclei, neuronal ultrastructure, synaptic clefts, axon.
+- **Lightsheet Microscopy**: brain neural activity, Alzheimer’s plaque, nuclei, vessel.
 
 <!-- ## Dataset
 BiomedParseData was created from preprocessing publicly available biomedical image segmentation datasets. Check a subset of our processed datasets on HuggingFace: https://huggingface.co/datasets/microsoft/BiomedParseData. For the source datasets, please check the details here: [BiomedParseData](assets/readmes/DATASET.md). As a quick start, we've samples a tiny demo dataset at biomedparse_datasets/BiomedParseData-Demo -->
