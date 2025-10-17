@@ -12,7 +12,7 @@ This repository hosts the code and resources for **BiomedParse**, aka "A Foundat
 
 Since the publication of BiomedParse, we've been continuously collecting feedbacks from the community and making progressive efforts to improve and expand its capability and usability. The v2 release provides:
 
-- Larger [`pretraining data`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM) at million scale covering ['200+ anatomies'](https://github.com/microsoft/BiomedParse?tab=readme-ov-file#supported-tasks) across different modalities.
+- Larger [`pretraining data`](https://huggingface.co/datasets/junma/CVPR-BiomedSegFM) at million scale covering [200+ anatomies](https://github.com/microsoft/BiomedParse?tab=readme-ov-file#supported-tasks) across different modalities.
 - Improved segmentation performance for small objects using the [`BoltzFormer`](https://openaccess.thecvf.com/content/CVPR2025/papers/Zhao_Boltzmann_Attention_Sampling_for_Image_Analysis_with_Small_Objects_CVPR_2025_paper.pdf) architecture.
 - SOTA 3D segmentation performance supporting end-to-end volumetric inference ([`CVPR Challenge`](https://www.codabench.org/competitions/5651/)).
 - Built-in object existence detection for false positives (no seperate mask checking required).
