@@ -123,3 +123,4 @@ output
 model_weights
 pretrained
 outputs
+assets/weights
