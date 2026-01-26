@@ -1,14 +1,14 @@
 from PIL import Image
 import torch
-from modeling.BaseModel import BaseModel
-from modeling import build_model
-from utilities.distributed import init_distributed
-from utilities.arguments import load_opt_from_config_files
-from utilities.constants import BIOMED_CLASSES
+from BiomedParse.modeling.BaseModel import BaseModel
+from BiomedParse.modeling import build_model
+from BiomedParse.utilities.distributed import init_distributed
+from BiomedParse.utilities.arguments import load_opt_from_config_files
+from BiomedParse.utilities.constants import BIOMED_CLASSES
 import numpy as np
 
-from inference_utils.inference import interactive_infer_image
-from inference_utils.output_processing import check_mask_stats
+from BiomedParse.inference_utils.inference import interactive_infer_image
+from BiomedParse.inference_utils.output_processing import check_mask_stats
 
 opt = load_opt_from_config_files(["configs/biomedparse_inference.yaml"])
 opt = init_distributed(opt)

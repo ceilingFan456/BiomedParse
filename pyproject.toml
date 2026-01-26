@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "BiomedParse"
+version = "0.0.0"
+description = "BiomedParse package"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["BiomedParse", "BiomedParse.*"]

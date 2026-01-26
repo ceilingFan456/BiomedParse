@@ -1,4 +1,4 @@
-name: biomedparse
+name: biomedparse-main
 channels:
   - pytorch
   - nvidia
