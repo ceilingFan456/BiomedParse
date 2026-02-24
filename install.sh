@@ -19,3 +19,8 @@ pip install --no-build-isolation git+https://github.com/MaureenZOU/detectron2-xy
 
 pip install mpi4py
 pip install -r assets/requirements/requirements.txt
+
+pip install webdataset==0.2.86
+
+
+## reference list of packages is inside my_environment.yaml. 
